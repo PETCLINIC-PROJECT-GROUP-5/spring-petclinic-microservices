@@ -112,7 +112,10 @@ services:
         condition: service_healthy
     ports:
      - 8080:8080
-
+    environment:
+     - SPRING_PROFILES_ACTIVE=docker
+     - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+     - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://tracing-server:9411/api/v2/spans
   tracing-server:
     image: openzipkin/zipkin
     container_name: tracing-server
