@@ -3,53 +3,63 @@ kind: Deployment
 metadata:
   name: vets-service
   namespace: petclinic
+
 spec:
   replicas: 1
+
   selector:
     matchLabels:
       app: vets-service
+
   template:
     metadata:
       labels:
         app: vets-service
+
     spec:
       imagePullSecrets:
         - name: ecr-secret
+
       containers:
         - name: vets-service
           image: 045810265680.dkr.ecr.us-east-1.amazonaws.com/petclinic/vets-service:9caf48e
+
           ports:
-            - containerPort: 8080
+            - containerPort: 8083  # ✅ fixed from 8080
+
+          envFrom:
+            - configMapRef:
+                name: app-config
+
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: kubernetes,mysql
-            - name: CONFIG_SERVER_URL
-              value: http://config-server:8888
-            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-              value: http://discovery-server:8761/eureka/
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://vets-db:3306/petclinic
+              value: jdbc:mysql://vets-db:3306/vets  # ✅ fixed from 'petclinic'
+
             - name: SPRING_DATASOURCE_USERNAME
               value: root
+
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: vets-db-secret
                   key: mysql-root-password
+
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8083  # ✅ fixed from 8080
             initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 10
+
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8083  # ✅ fixed from 8080
             initialDelaySeconds: 180
             periodSeconds: 20
             failureThreshold: 3
+
           resources:
             requests:
               memory: 512Mi
@@ -57,15 +67,18 @@ spec:
             limits:
               memory: 768Mi
               cpu: 500m
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: vets-service
   namespace: petclinic
+
 spec:
   selector:
     app: vets-service
+
   ports:
     - port: 8083
-      targetPort: 8080
+      targetPort: 8083  # ✅ fixed from 8080

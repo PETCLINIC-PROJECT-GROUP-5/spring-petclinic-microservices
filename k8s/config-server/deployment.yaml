@@ -19,24 +19,26 @@ spec:
         - name: config-server
           image: 045810265680.dkr.ecr.us-east-1.amazonaws.com/petclinic/config-server:9caf48e
           ports:
-            - containerPort: 8888
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: git
-            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
-              value: https://github.com/PETCLINIC-PROJECT-GROUP-5/spring-petclinic-microservices-config
+            - containerPort: 8888  # ✅ correct
+
+          envFrom:
+            - configMapRef:
+                name: config-server-config  # ✅ fixed from 'app-config'
+
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8888
+              port: 8888  # ✅ correct
             initialDelaySeconds: 30
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8888
+              port: 8888  # ✅ correct
             initialDelaySeconds: 60
             periodSeconds: 20
+
           resources:
             requests:
               memory: 512Mi

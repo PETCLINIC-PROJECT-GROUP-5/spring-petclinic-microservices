@@ -3,34 +3,48 @@ kind: Deployment
 metadata:
   name: admin-server
   namespace: petclinic
+
 spec:
   replicas: 1
+
   selector:
     matchLabels:
       app: admin-server
+
   template:
     metadata:
       labels:
         app: admin-server
+
     spec:
       imagePullSecrets:
         - name: ecr-secret
+
       containers:
         - name: admin-server
           image: 045810265680.dkr.ecr.us-east-1.amazonaws.com/petclinic/admin-server:9caf48e
+
           ports:
-            - containerPort: 9090
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: kubernetes
-            - name: CONFIG_SERVER_URL
-              value: http://config-server:8888
+            - containerPort: 9090  # ✅ correct
+
+          envFrom:
+            - configMapRef:
+                name: admin-config  # ✅ fixed from 'app-config'
+
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 9090
+              port: 9090  # ✅ correct
             initialDelaySeconds: 60
             periodSeconds: 10
+
+          livenessProbe:              # ✅ added — was missing
+            httpGet:
+              path: /actuator/health
+              port: 9090
+            initialDelaySeconds: 120
+            periodSeconds: 20
+
           resources:
             requests:
               memory: 512Mi
@@ -38,15 +52,18 @@ spec:
             limits:
               memory: 768Mi
               cpu: 500m
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: admin-server
   namespace: petclinic
+
 spec:
   selector:
     app: admin-server
+
   ports:
-    - port: 9090
+    - port: 9090      # ✅ correct
       targetPort: 9090

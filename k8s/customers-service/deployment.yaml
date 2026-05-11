@@ -3,53 +3,63 @@ kind: Deployment
 metadata:
   name: customers-service
   namespace: petclinic
+
 spec:
   replicas: 1
+
   selector:
     matchLabels:
       app: customers-service
+
   template:
     metadata:
       labels:
         app: customers-service
+
     spec:
       imagePullSecrets:
         - name: ecr-secret
+
       containers:
         - name: customers-service
           image: 045810265680.dkr.ecr.us-east-1.amazonaws.com/petclinic/customers-service:9caf48e
+
           ports:
-            - containerPort: 8080
+            - containerPort: 8081  # ✅ fixed from 8080
+
+          envFrom:
+            - configMapRef:
+                name: app-config
+
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: kubernetes,mysql
-            - name: CONFIG_SERVER_URL
-              value: http://config-server:8888
-            - name: SPRING_APPLICATION_JSON
-              value: '{"eureka":{"client":{"serviceUrl":{"defaultZone":"http://discovery-server:8761/eureka/"}}}}'
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mysql://customers-db:3306/petclinic
+              value: jdbc:mysql://customers-db:3306/customers  # ✅ fixed from 'petclinic'
+
             - name: SPRING_DATASOURCE_USERNAME
               value: root
+
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: customers-db-secret
                   key: mysql-root-password
+
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8081  # ✅ fixed from 8080
             initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 10
+
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8081  # ✅ fixed from 8080
             initialDelaySeconds: 180
             periodSeconds: 20
             failureThreshold: 3
+
           resources:
             requests:
               memory: 512Mi
@@ -57,15 +67,18 @@ spec:
             limits:
               memory: 768Mi
               cpu: 500m
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: customers-service
   namespace: petclinic
+
 spec:
   selector:
     app: customers-service
+
   ports:
     - port: 8081
-      targetPort: 8080
+      targetPort: 8081  # ✅ fixed from 8080

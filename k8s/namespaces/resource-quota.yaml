@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: petclinic-quota
+  namespace: petclinic
+spec:
+  hard:
+    # Total CPU across all pods in this namespace
+    requests.cpu: "2000m"
+    limits.cpu: "3000m"
+
+    # Total memory across all pods in this namespace
+    requests.memory: "5Gi"
+    limits.memory: "6Gi"
+
+    # Max number of pods allowed
+    pods: "20"
+
+    # Max number of secrets and configmaps
+    secrets: "20"
+    configmaps: "20"
