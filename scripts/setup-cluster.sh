@@ -117,6 +117,40 @@ kubectl wait --for=condition=Available deployment/metrics-server \
   --timeout=120s
 echo "✅ Metrics Server ready"
 
+# Update LBC role trust policy with current OIDC ID
+echo "Updating LBC trust policy..."
+OIDC_ID=$(aws eks describe-cluster \
+  --name petclinic-cluster \
+  --region us-east-1 \
+  --query "cluster.identity.oidc.issuer" \
+  --output text | cut -d '/' -f 5)
+
+cat > /tmp/lbc-trust.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::045810265680:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/${OIDC_ID}"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.us-east-1.amazonaws.com/id/${OIDC_ID}:aud": "sts.amazonaws.com",
+          "oidc.eks.us-east-1.amazonaws.com/id/${OIDC_ID}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+        }
+      }
+    }
+  ]
+}
+EOF
+
+aws iam update-assume-role-policy \
+  --role-name AmazonEKS_LBC_Role \
+  --policy-document file:///tmp/lbc-trust.json
+echo "✅ LBC trust policy updated for OIDC ID: $OIDC_ID"
+
 # Install AWS Load Balancer Controller
 echo "Installing AWS Load Balancer Controller..."
 helm repo add eks https://aws.github.io/eks-charts 2>/dev/null || true
@@ -130,19 +164,20 @@ VPC_ID=$(aws ec2 describe-vpcs \
 
 echo "VPC ID: $VPC_ID"
 
-# Install or upgrade the controller
 helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
   --set clusterName=petclinic-cluster \
   --set serviceAccount.create=true \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::045810265680:role/AmazonEKS_LBC_Role \
   --set region=us-east-1 \
   --set vpcId=$VPC_ID
 
-echo "Waiting for Load Balancer Controller to be ready..."
 kubectl wait --for=condition=Available deployment/aws-load-balancer-controller \
   -n kube-system \
   --timeout=120s
 echo "✅ Load Balancer Controller ready"
+
 
 # Create namespaces
 kubectl apply -f k8s/namespaces/namespaces.yml
