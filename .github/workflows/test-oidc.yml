@@ -1,0 +1,18 @@
+# .github/workflows/test-oidc.yml
+name: Test OIDC
+on: workflow_dispatch
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Verify identity
+        run: aws sts get-caller-identity
+        # Should show: github-actions-petclinic role
