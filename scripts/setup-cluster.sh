@@ -50,18 +50,62 @@ for user in \
 done
 echo "✅ Team access complete"
 
+# Update EBS CSI role trust policy with current cluster OIDC ID
+echo "Updating EBS CSI trust policy..."
+OIDC_ID=$(aws eks describe-cluster \
+  --name petclinic-cluster \
+  --region us-east-1 \
+  --query "cluster.identity.oidc.issuer" \
+  --output text | cut -d '/' -f 5)
+
+cat > /tmp/ebs-csi-trust.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::045810265680:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/${OIDC_ID}"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.us-east-1.amazonaws.com/id/${OIDC_ID}:aud": "sts.amazonaws.com",
+          "oidc.eks.us-east-1.amazonaws.com/id/${OIDC_ID}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+        }
+      }
+    }
+  ]
+}
+EOF
+
+aws iam update-assume-role-policy \
+  --role-name AmazonEKS_EBS_CSI_DriverRole \
+  --policy-document file:///tmp/ebs-csi-trust.json
+echo "✅ EBS CSI trust policy updated for OIDC ID: $OIDC_ID"
+
 # Install EBS CSI driver
 echo "Installing EBS CSI driver..."
 aws eks create-addon \
   --cluster-name petclinic-cluster \
   --addon-name aws-ebs-csi-driver \
+  --service-account-role-arn arn:aws:iam::045810265680:role/AmazonEKS_EBS_CSI_DriverRole \
   --region us-east-1 2>/dev/null || true
 
 echo "Waiting for EBS CSI driver to be ACTIVE..."
-aws eks wait addon-active \
-  --cluster-name petclinic-cluster \
-  --addon-name aws-ebs-csi-driver \
-  --region us-east-1
+for i in $(seq 1 20); do
+  STATUS=$(aws eks describe-addon \
+    --cluster-name petclinic-cluster \
+    --addon-name aws-ebs-csi-driver \
+    --region us-east-1 \
+    --query 'addon.status' \
+    --output text)
+  echo "  Status: $STATUS (attempt $i/20)"
+  if [ "$STATUS" = "ACTIVE" ]; then
+    break
+  fi
+  sleep 30
+done
 echo "✅ EBS CSI driver ready"
 
 # Install Metrics Server

@@ -19,6 +19,11 @@ kubectl apply -f k8s/namespaces/
 echo "✅ Namespaces ready"
 
 echo ""
+echo "Step 1b — ConfigMaps"
+kubectl apply -f k8s/configmaps/
+echo "✅ ConfigMaps ready"
+
+echo ""
 echo "Step 2 — MySQL StatefulSets"
 kubectl apply -f k8s/mysql/
 echo "Waiting for MySQL pods to be Ready..."
