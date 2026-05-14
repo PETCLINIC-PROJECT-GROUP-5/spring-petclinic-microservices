@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring
+data:
+  alert-rules.yml: |
+    groups:
+    - name: petclinic.rules
+      rules:
+
+      # Pod is down
+      - alert: PodDown
+        expr: kube_pod_status_ready{namespace="petclinic", condition="true"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod {{ $labels.pod }} is down"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been down for more than 1 minute."
+
+      # Pod CrashLoopBackOff
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total{namespace="petclinic"}[5m]) * 300 > 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod {{ $labels.pod }} is crash looping"
+          description: "Pod {{ $labels.pod }} is restarting more than once every 5 minutes."
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{namespace="petclinic"}[5m]) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.pod }}"
+          description: "Pod {{ $labels.pod }} CPU usage is above 80% for more than 2 minutes."
+
+      # High Memory usage
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes{namespace="petclinic"} / container_spec_memory_limit_bytes{namespace="petclinic"} * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.pod }}"
+          description: "Pod {{ $labels.pod }} memory usage is above 80% of its limit for more than 2 minutes."
+
+      # Service scrape target down
+      - alert: ServiceDown
+        expr: up{job=~"api-gateway|customers-service|visits-service|vets-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Prometheus cannot scrape {{ $labels.job }} — it has been unreachable for more than 1 minute."
+
+      # Prometheus itself down (deadman switch)
+      - alert: PrometheusTargetMissing
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus target missing: {{ $labels.job }}"
+          description: "A Prometheus scrape target has disappeared: {{ $labels.job }}"
