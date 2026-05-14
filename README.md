@@ -97,16 +97,16 @@ As a DevOps internship project, the team's focus was **not** writing Java code â
 | Name | Role |
 |---|---|
 | Ed Eguaikhide | Project Lead / Scrum Master |
-| Solomon | Infrastructure Lead |
-| Justin | Infrastructure Engineer |
-| Dube | Kubernetes Lead |
-| Adegboyega | Kubernetes Engineer |
-| Bello | CI/CD Lead |
-| Jennifer | CI/CD Engineer |
-| Walker | Observability Lead |
-| Chukwuma | Observability Engineer |
-| Lucy | App / Docker Lead |
-| Ugochukwu | Documentation Lead |
+| Solomon Nwachukwu Olungweonwi | Infrastructure Lead |
+| ALEKE JUSTIN EKENE | Infrastructure Engineer |
+| Samkeliso Dube | Kubernetes Lead |
+| Adegboyega Bamidele Ogunsemoyin | Kubernetes Engineer |
+| Bello Okikioluwa | CI/CD Lead |
+| JENNIFER IFESINACHI UDEH | CI/CD Engineer |
+| Foster Setor | Observability Lead |
+| Emmanuel Chukwuma Agohukoh | Observability Engineer |
+| Ebelechukwu Lucy Okafor | App / Docker Lead |
+| Bestman Ugochukwu Afokwalam | Documentation Lead |
 
 ---
 
