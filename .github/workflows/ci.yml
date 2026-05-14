@@ -1,0 +1,223 @@
+name: CI — Build and Push to ECR
+
+ 
+
+on:
+
+  push:
+
+    branches: [dev]
+
+ 
+
+permissions:
+
+  id-token: write
+
+  contents: read
+
+ 
+
+env:
+
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+  IMAGE_TAG: ${{ github.sha }}
+
+ 
+
+jobs:
+
+  build-and-push:
+
+    name: Build and Push Docker Images
+
+    runs-on: ubuntu-latest
+
+ 
+
+    steps:
+
+      - name: Checkout code
+
+        uses: actions/checkout@v4
+
+ 
+
+      - name: Configure AWS credentials via OIDC
+
+        uses: aws-actions/configure-aws-credentials@v4
+
+        with:
+
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+          aws-region: ${{ secrets.AWS_REGION }}
+
+ 
+
+      - name: Login to Amazon ECR
+
+        uses: aws-actions/amazon-ecr-login@v2
+
+ 
+
+      - name: Set up Docker Buildx
+
+        uses: docker/setup-buildx-action@v3
+
+ 
+
+      - name: Build and push config-server
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-config-server
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/config-server:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push discovery-server
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-discovery-server
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/discovery-server:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push customers-service
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-customers-service
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/customers-service:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push vets-service
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-vets-service
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/vets-service:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push visits-service
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-visits-service
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/visits-service:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push api-gateway
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-api-gateway
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/api-gateway:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push admin-server
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-admin-server
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/admin-server:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push genai-service
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-genai-service
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/genai-service:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Build and push zipkin
+
+        uses: docker/build-push-action@v5
+
+        with:
+
+          context: ./spring-petclinic-zipkin
+
+          platforms: linux/amd64
+
+          push: true
+
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/zipkin:${{ env.IMAGE_TAG }}
+
+ 
+
+      - name: Print image tags
+
+        run: |
+
+          echo "Images pushed with tag: ${{ env.IMAGE_TAG }}"
+
+          echo "ECR Registry: ${{ env.ECR_REGISTRY }}"
