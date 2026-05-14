@@ -31,8 +31,8 @@ for user in \
   petclinic-k8s-engineer \
   petclinic-cicd-lead \
   petclinic-cicd-engineer \
-  petclinic-obs-lead \
-  petclinic-obs-engineer; do
+  petclinic-observability-lead \
+  petclinic-observability-engineer; do
 
   aws eks create-access-entry \
     --cluster-name petclinic-cluster \
@@ -50,6 +50,66 @@ for user in \
 done
 echo "✅ Team access complete"
 
+# Grant EKS access to GitHub Actions role
+echo "Granting EKS access to GitHub Actions role..."
+aws eks create-access-entry \
+  --cluster-name petclinic-cluster \
+  --principal-arn arn:aws:iam::045810265680:role/github-actions-petclinic \
+  --region us-east-1 2>/dev/null || true
+
+aws eks associate-access-policy \
+  --cluster-name petclinic-cluster \
+  --principal-arn arn:aws:iam::045810265680:role/github-actions-petclinic \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster \
+  --region us-east-1 2>/dev/null || true
+echo "✅ GitHub Actions role granted EKS access"
+
+# Recreate GitHub Actions OIDC provider and role if missing
+echo "Ensuring GitHub Actions OIDC provider exists..."
+aws iam create-open-id-connect-provider \
+  --url https://token.actions.githubusercontent.com \
+  --client-id-list sts.amazonaws.com \
+  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1 2>/dev/null || true
+
+cat > /tmp/github-oidc-trust.json << 'TRUSTEOF'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::045810265680:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:PETCLINIC-PROJECT-GROUP-5/spring-petclinic-microservices:*"
+        },
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        }
+      }
+    }
+  ]
+}
+TRUSTEOF
+
+aws iam create-role \
+  --role-name github-actions-petclinic \
+  --assume-role-policy-document file:///tmp/github-oidc-trust.json 2>/dev/null || \
+aws iam update-assume-role-policy \
+  --role-name github-actions-petclinic \
+  --policy-document file:///tmp/github-oidc-trust.json
+
+aws iam attach-role-policy \
+  --role-name github-actions-petclinic \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess 2>/dev/null || true
+
+aws iam attach-role-policy \
+  --role-name github-actions-petclinic \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy 2>/dev/null || true
+echo "✅ GitHub Actions role ready"
 # Update EBS CSI role trust policy with current cluster OIDC ID
 echo "Updating EBS CSI trust policy..."
 OIDC_ID=$(aws eks describe-cluster \
