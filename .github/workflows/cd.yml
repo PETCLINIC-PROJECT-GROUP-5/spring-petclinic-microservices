@@ -1,0 +1,101 @@
+name: CD — Deploy to EKS
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  IMAGE_TAG: ${{ github.sha }}
+  EKS_CLUSTER: ${{ secrets.EKS_CLUSTER_NAME }}
+
+jobs:
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER }}
+
+      - name: Update config-server image
+        run: |
+          kubectl set image deployment/config-server \
+            config-server=${{ env.ECR_REGISTRY }}/petclinic/config-server:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/config-server -n petclinic --timeout=300s
+
+      - name: Update discovery-server image
+        run: |
+          kubectl set image deployment/discovery-server \
+            discovery-server=${{ env.ECR_REGISTRY }}/petclinic/discovery-server:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/discovery-server -n petclinic --timeout=300s
+
+      - name: Update customers-service image
+        run: |
+          kubectl set image deployment/customers-service \
+            customers-service=${{ env.ECR_REGISTRY }}/petclinic/customers-service:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/customers-service -n petclinic --timeout=300s
+
+      - name: Update vets-service image
+        run: |
+          kubectl set image deployment/vets-service \
+            vets-service=${{ env.ECR_REGISTRY }}/petclinic/vets-service:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/vets-service -n petclinic --timeout=300s
+
+      - name: Update visits-service image
+        run: |
+          kubectl set image deployment/visits-service \
+            visits-service=${{ env.ECR_REGISTRY }}/petclinic/visits-service:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/visits-service -n petclinic --timeout=300s
+
+      - name: Update api-gateway image
+        run: |
+          kubectl set image deployment/api-gateway \
+            api-gateway=${{ env.ECR_REGISTRY }}/petclinic/api-gateway:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/api-gateway -n petclinic --timeout=300s
+
+      - name: Update admin-server image
+        run: |
+          kubectl set image deployment/admin-server \
+            admin-server=${{ env.ECR_REGISTRY }}/petclinic/admin-server:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/admin-server -n petclinic --timeout=300s
+
+      - name: Update genai-service image
+        run: |
+          kubectl set image deployment/genai-service \
+            genai-service=${{ env.ECR_REGISTRY }}/petclinic/genai-service:${{ env.IMAGE_TAG }} \
+            -n petclinic
+          kubectl rollout status deployment/genai-service -n petclinic --timeout=300s
+
+      - name: Verify all pods Running
+        run: kubectl get pods -n petclinic
+
+      - name: Deployment summary
+        run: |
+          echo "Deployment complete"
+          echo "Image tag: ${{ env.IMAGE_TAG }}"
+          echo "Cluster: ${{ env.EKS_CLUSTER }}"
