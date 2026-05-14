@@ -38,6 +38,11 @@ spec:
                 secretKeyRef:
                   name: vets-db-secret
                   key: mysql-root-password
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
           readinessProbe:
             httpGet:
               path: /actuator/health

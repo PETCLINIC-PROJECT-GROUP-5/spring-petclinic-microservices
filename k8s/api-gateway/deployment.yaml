@@ -27,6 +27,11 @@ spec:
               value: http://config-server:8888
             - name: SPRING_APPLICATION_JSON
               value: '{"eureka":{"client":{"serviceUrl":{"defaultZone":"http://discovery-server:8761/eureka/"}}},"spring":{"cloud":{"gateway":{"discovery":{"locator":{"enabled":true,"lower-case-service-id":true}}}}}}'
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
           readinessProbe:
             httpGet:
               path: /actuator/health
