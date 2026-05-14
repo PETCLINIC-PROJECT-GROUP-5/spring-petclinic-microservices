@@ -39,7 +39,7 @@ As a DevOps internship project, the team's focus was **not** writing Java code �
 > 📌 *Architecture diagram will be inserted here — showing all 9 services, AWS infrastructure (EKS, ECR, ALB, VPC), and traffic flow.*
 
 **Figure 1 — Architecture Diagram**
-`[Insert high-resolution architecture diagram PNG here]`
+![Architecture Diagram](docs/spring_petclinic_aws_architecture.jpg)
 
 **Traffic Flow Summary:**
 - All external traffic enters through the **AWS Application Load Balancer (ALB)**
