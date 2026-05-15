@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: customers-db
+  namespace: petclinic
+spec:
+  serviceName: customers-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customers-db
+  template:
+    metadata:
+      labels:
+        app: customers-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: customers-db-secret
+                  key: mysql-root-password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: customers-db-secret
+                  key: mysql-database
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 250m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: gp2   # ✅ IMPORTANT FIX
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customers-db
+  namespace: petclinic
+spec:
+  clusterIP: None
+  selector:
+    app: customers-db
+  ports:
+    - port: 3306
+      targetPort: 3306

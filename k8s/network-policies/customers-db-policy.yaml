@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: customers-db-policy
+  namespace: petclinic
+spec:
+  podSelector:
+    matchLabels:
+      app: customers-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: customers-service
+      ports:
+        - protocol: TCP
+          port: 3306

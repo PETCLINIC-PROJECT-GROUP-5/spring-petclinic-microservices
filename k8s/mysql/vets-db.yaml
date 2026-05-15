@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vets-db
+  namespace: petclinic
+spec:
+  serviceName: vets-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vets-db
+  template:
+    metadata:
+      labels:
+        app: vets-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vets-db-secret
+                  key: mysql-root-password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: vets-db-secret
+                  key: mysql-database
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 250m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: gp2   # ✅ FIX ADDED
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vets-db
+  namespace: petclinic
+spec:
+  clusterIP: None
+  selector:
+    app: vets-db
+  ports:
+    - port: 3306
+      targetPort: 3306

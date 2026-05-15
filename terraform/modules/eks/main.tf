@@ -14,8 +14,8 @@ module "eks" {
     default = {
       instance_types = ["t3.medium"]
       min_size       = 2
-      max_size       = 4
-      desired_size   = 2
+      max_size       = 5
+      desired_size   = 4
 
       iam_role_additional_policies = {
         AmazonEC2ContainerRegistryReadOnly = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
