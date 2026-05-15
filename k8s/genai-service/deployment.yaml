@@ -26,11 +26,11 @@ spec:
               value: kubernetes
             - name: CONFIG_SERVER_URL
               value: http://config-server:8888
-            - name: OPENAI_API_KEY
+           - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openai-secret
-                  key: api-key
+                  name: openai-secret      # matches what you created
+                  key: api-key             # matches the secret key
           readinessProbe:
             httpGet:
               path: /actuator/health
