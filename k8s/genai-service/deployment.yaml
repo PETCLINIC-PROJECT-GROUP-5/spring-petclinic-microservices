@@ -1,4 +1,3 @@
-# This file defines the Kubernetes Deployment for the genai-service application.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,30 +25,44 @@ spec:
               value: kubernetes
             - name: CONFIG_SERVER_URL
               value: http://config-server:8888
-           - name: OPENAI_API_KEY
+            - name: SPRING_CONFIG_IMPORT
+              value: configserver:http://config-server:8888
+            - name: SERVER_PORT
+              value: "8084"
+            - name: SPRING_APPLICATION_JSON
+              value: '{"eureka":{"client":{"serviceUrl":{"defaultZone":"http://discovery-server:8761/eureka/"}}}}'
+            - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openai-secret      # matches what you created
-                  key: api-key             # matches the secret key
+                  name: openai-secret
+                  key: api-key
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            failureThreshold: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8084
-            initialDelaySeconds: 120    # Give it 2 minutes
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 10
           livenessProbe:
             httpGet:
               path: /actuator/health
               port: 8084
-            initialDelaySeconds: 180    # Give it 3 minutes
+            initialDelaySeconds: 0
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
           resources:
             requests:
-              memory: 512Mi
+              memory: 768Mi
               cpu: 250m
             limits:
-              memory: 768Mi
+              memory: 1Gi
               cpu: 500m
-        
- 
-
