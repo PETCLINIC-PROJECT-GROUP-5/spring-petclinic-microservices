@@ -26,7 +26,9 @@ spec:
               value: kubernetes
             - name: CONFIG_SERVER_URL
               value: http://config-server:8888
-           - name: OPENAI_API_KEY
+            - name: SPRING_CONFIG_IMPORT
+              value: configserver:http://config-server:8888
+            - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: openai-secret      # matches what you created
