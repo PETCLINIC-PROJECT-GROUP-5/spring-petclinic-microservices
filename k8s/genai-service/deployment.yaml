@@ -21,16 +21,16 @@ spec:
           image: 045810265680.dkr.ecr.us-east-1.amazonaws.com/petclinic/genai-service:9caf48e
           ports:
             - containerPort: 8084
-          #env:
-          #  - name: SPRING_PROFILES_ACTIVE
-           #   value: kubernetes
-           # - name: CONFIG_SERVER_URL
-            #  value: http://config-server:8888
-            # name: OPENAI_API_KEY
-              #valueFrom:
-               # secretKeyRef:
-                #  name: openai-secret
-                 # key: api-key
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: kubernetes
+            - name: CONFIG_SERVER_URL
+              value: http://config-server:8888
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-secret
+                  key: api-key
           readinessProbe:
             httpGet:
               path: /actuator/health
