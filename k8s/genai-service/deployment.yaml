@@ -26,11 +26,12 @@ spec:
               value: kubernetes
             - name: CONFIG_SERVER_URL
               value: http://config-server:8888
+            - env:
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openai-secret
-                  key: api-key
+                  name: openai-secret      # matches what you created
+                  key: api-key             # matches the secret key
             - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
               valueFrom:
                 configMapKeyRef:
