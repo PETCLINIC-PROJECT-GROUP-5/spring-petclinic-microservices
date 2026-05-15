@@ -41,13 +41,13 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8084
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120      # Give it 2 mintues
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health
               port: 8084
-            initialDelaySeconds: 120
+            initialDelaySeconds: 180      # Give it 3 minutes
             periodSeconds: 20
           resources:
             requests:
