@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: grafana-datasource-config
   namespace: monitoring
+  labels:
+    grafana_datasource: "1"
 data:
   all.yml: |
     apiVersion: 1
@@ -11,7 +13,7 @@ data:
       type: prometheus
       access: proxy
       orgId: 1
-      url: http://prometheus-server:9090
+      url: http://prometheus-server:80
       isDefault: true
       version: 1
       editable: true

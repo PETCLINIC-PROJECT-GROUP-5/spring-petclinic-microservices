@@ -777,3 +777,5 @@ kind: ConfigMap
 metadata:
   name: grafana-dashboards
   namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
