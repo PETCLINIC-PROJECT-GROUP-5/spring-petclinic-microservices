@@ -528,7 +528,7 @@
       "tableColumn": "Value",
       "targets": [
         {
-          "expr": "sum(petclinic_visit_seconds_count{method=\"read\", exception=\"none\"})",
+          "expr": "sum(petclinic_visit_seconds_count{method=\"create\", exception=\"none\"})",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
