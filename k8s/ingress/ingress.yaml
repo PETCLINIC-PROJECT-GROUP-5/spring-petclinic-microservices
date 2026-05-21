@@ -6,7 +6,9 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:045810265680:certificate/eba02537-258e-4e5f-a035-916f49a4b6b7
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
     alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '10'
@@ -15,7 +17,8 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - http:
+    - host: petclinic-group5.sammylearnscloud.linkpc.net
+      http:
         paths:
           - path: /
             pathType: Prefix
