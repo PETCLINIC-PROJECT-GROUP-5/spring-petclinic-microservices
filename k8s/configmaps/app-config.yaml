@@ -6,3 +6,4 @@ metadata:
 data:
   CONFIG_SERVER_URL: "http://config-server:8888"
   SPRING_PROFILES_ACTIVE: "kubernetes,mysql"
+  MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans

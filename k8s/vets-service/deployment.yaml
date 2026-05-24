@@ -38,10 +38,11 @@ spec:
                 secretKeyRef:
                   name: vets-db-secret
                   key: mysql-root-password
-            - name: MANAGEMENT_TRACING_SAMPLING_PROBABILITY
-              value: "1.0"
-            - name: MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT
-              value: http://zipkin:9411/api/v2/spans
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
           readinessProbe:
             httpGet:
               path: /actuator/health

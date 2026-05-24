@@ -25,6 +25,11 @@ spec:
               value: kubernetes
             - name: CONFIG_SERVER_URL
               value: http://config-server:8888
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
           readinessProbe:
             httpGet:
               path: /actuator/health

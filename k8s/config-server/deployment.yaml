@@ -24,7 +24,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: config-server-config  # ✅ fixed from 'app-config'
-
+          env:
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
           readinessProbe:
             httpGet:
               path: /actuator/health

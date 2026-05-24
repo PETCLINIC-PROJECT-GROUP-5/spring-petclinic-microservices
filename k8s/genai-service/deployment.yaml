@@ -25,22 +25,22 @@ spec:
               value: kubernetes
             - name: CONFIG_SERVER_URL
               value: http://config-server:8888
-            - name: SPRING_CONFIG_IMPORT
-              value: configserver:http://config-server:8888
-            - name: SERVER_PORT
-              value: "8084"
-            - name: SPRING_APPLICATION_JSON
-              value: '{"eureka":{"client":{"serviceUrl":{"defaultZone":"http://discovery-server:8761/eureka/"}}}}'
+            - env:
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openai-secret
-                  key: api-key
-          startupProbe:
+                  name: openai-secret      # matches what you created
+                  key: api-key             # matches the secret key
+            - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+          readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8084
-            failureThreshold: 60
+            initialDelaySeconds: 120      # Give it 2 mintues
             periodSeconds: 10
             timeoutSeconds: 5
           readinessProbe:
@@ -55,7 +55,7 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8084
-            initialDelaySeconds: 0
+            initialDelaySeconds: 180      # Give it 3 minutes
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 5
