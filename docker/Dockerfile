@@ -1,28 +1,39 @@
+# Global argument for the module to build
+ARG MODULE=spring-petclinic-api-gateway
+ARG PORT=8080
+
+# Stage 1: Build the application using Maven
+FROM maven:3.8.5-openjdk-17-slim AS build
+ARG MODULE
+WORKDIR /app
+COPY . .
+RUN mvn -pl $MODULE -am -DskipTests package
+
+# Stage 2: Extract layers
 FROM eclipse-temurin:17 AS builder
-WORKDIR application
-ARG ARTIFACT_NAME
-COPY ${ARTIFACT_NAME}.jar application.jar
+ARG MODULE
+WORKDIR /application
+COPY --from=build /app/${MODULE}/target/*.jar application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 
-
+# Stage 3: Final runtime image
 FROM eclipse-temurin:17
-WORKDIR application
+WORKDIR /application
 
-ARG EXPOSED_PORT
-EXPOSE ${EXPOSED_PORT}
+# Port configuration
+ARG PORT
+ENV SERVER_PORT=${PORT}
+EXPOSE ${PORT}
 
 ENV SPRING_PROFILES_ACTIVE=docker
 
-COPY --from=builder application/dependencies/ ./
+COPY --from=builder /application/dependencies/ ./
+RUN true
+COPY --from=builder /application/spring-boot-loader/ ./
+RUN true
+COPY --from=builder /application/snapshot-dependencies/ ./
+RUN true
+COPY --from=builder /application/application/ ./
+RUN true
 
-# fix for https://stackoverflow.com/questions/51115856/docker-failed-to-export-image-failed-to-create-image-failed-to-get-layer
-# (only last copy caused issue)
-# this seems to be triggered by using btrfs:
-# https://github.com/moby/moby/issues/36573
-RUN true
-COPY --from=builder application/spring-boot-loader/ ./
-RUN true
-COPY --from=builder application/snapshot-dependencies/ ./
-RUN true
-COPY --from=builder application/application/ ./
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
