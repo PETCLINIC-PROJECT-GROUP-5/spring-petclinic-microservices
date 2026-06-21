@@ -41,9 +41,24 @@ kubectl wait --for=condition=Ready pod \
   --timeout=180s
 echo "✅ MySQL databases ready"
 
+echo "  Waiting 15 extra seconds for visits-db schema to init..."
+sleep 15
 # Create pets stub table in visits-db
 echo "Creating pets stub table in visits-db..."
-kubectl exec -n petclinic visits-db-0 -- \
+for i in $(seq 1 12); do
+  DB_EXISTS=$(kubectl exec visits-db-0 -n petclinic -- \
+    mysql -u root -ppetclinic123 \
+    -e "SHOW DATABASES LIKE 'petclinic';" \
+    --skip-column-names 2>/dev/null | grep -c petclinic || echo 0)
+  if [ "$DB_EXISTS" -gt "0" ]; then
+    echo "  ✅ petclinic database ready in visits-db"
+    break
+  fi
+  echo "  Waiting for database... (attempt $i/12)"
+  sleep 10
+done
+
+kubectl exec visits-db-0 -n petclinic -- \
   mysql -u root -ppetclinic123 petclinic \
   -e "CREATE TABLE IF NOT EXISTS pets (
     id INT(4) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -80,6 +95,23 @@ kubectl apply -f k8s/customers-service/
 kubectl apply -f k8s/vets-service/
 kubectl apply -f k8s/visits-service/
 echo "✅ App services applied"
+
+echo ""
+echo "Step 5b — Sync pets data from customers-db to visits-db"
+echo "Waiting 90 seconds for customers-service to seed pet data..."
+sleep 90
+
+echo "Syncing pets..."
+kubectl exec customers-db-0 -n petclinic -- \
+  mysql -u root -ppetclinic123 petclinic \
+  -e "SELECT id, name, birth_date, type_id, owner_id FROM pets;" \
+  --batch --silent 2>/dev/null | \
+while IFS=$'\t' read -r id name birth_date type_id owner_id; do
+  kubectl exec visits-db-0 -n petclinic -- \
+    mysql -u root -ppetclinic123 petclinic \
+    -e "INSERT IGNORE INTO pets (id, name, birth_date, type_id, owner_id) VALUES ($id, '$name', '$birth_date', $type_id, $owner_id);" 2>/dev/null || true
+done
+echo "✅ Pets data synced to visits-db"
 
 echo ""
 echo "Step 6 — GenAI Service"

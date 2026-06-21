@@ -1,0 +1,146 @@
+name: CI — Build and Push to ECR
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build JAR files with Maven
+        run: ./mvnw package -DskipTests --no-transfer-progress
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push config-server
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/config-server:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-config-server/target/spring-petclinic-config-server-4.0.1
+            EXPOSED_PORT=8888
+
+      - name: Build and push discovery-server
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/discovery-server:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-discovery-server/target/spring-petclinic-discovery-server-4.0.1
+            EXPOSED_PORT=8761
+
+      - name: Build and push customers-service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/customers-service:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-customers-service/target/spring-petclinic-customers-service-4.0.1
+            EXPOSED_PORT=8081
+
+      - name: Build and push vets-service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/vets-service:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-vets-service/target/spring-petclinic-vets-service-4.0.1
+            EXPOSED_PORT=8083
+
+      - name: Build and push visits-service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/visits-service:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-visits-service/target/spring-petclinic-visits-service-4.0.1
+            EXPOSED_PORT=8082
+
+      - name: Build and push api-gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/api-gateway:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-api-gateway/target/spring-petclinic-api-gateway-4.0.1
+            EXPOSED_PORT=8080
+
+      - name: Build and push admin-server
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/admin-server:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-admin-server/target/spring-petclinic-admin-server-4.0.1
+            EXPOSED_PORT=9090
+
+      - name: Build and push genai-service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/petclinic/genai-service:${{ env.IMAGE_TAG }}
+          build-args: |
+            ARTIFACT_NAME=spring-petclinic-genai-service/target/spring-petclinic-genai-service-4.0.1
+            EXPOSED_PORT=8084
+
+      - name: Print image tags
+        run: |
+          echo "All images pushed with tag: ${{ env.IMAGE_TAG }}"
+          echo "ECR Registry: ${{ env.ECR_REGISTRY }}"
